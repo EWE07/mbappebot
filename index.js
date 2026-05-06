@@ -2,19 +2,32 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
 const fs = require('fs');
+const express = require('express'); // Importa o Express
 
+// --- CONFIGURAÇÃO DO EXPRESS ---
+const app = express();
+const PORT = 8080;
+
+// Rota raiz com nada escrito (vazia)
+app.get('/', (req, res) => {
+    res.send(''); 
+});
+
+app.listen(PORT, () => {
+    console.log(`🌐 Server Express rodando na porta ${PORT}`);
+});
+
+// --- CONFIGURAÇÕES DO BOT ---
 const TOKEN = process.env.TOKEN;
 const API_URL = 'https://mbappeout.replit.app/api/votes';
 const DATA_FILE = './votos.json';
 
-// --- SISTEMA DE ARQUIVOS ---
 const carregarOuCriarJSON = () => {
     if (!fs.existsSync(DATA_FILE)) {
         fs.writeFileSync(DATA_FILE, JSON.stringify({ vote: 0 }, null, 2));
     }
 };
 
-// --- CONFIGURAÇÃO DO BOT ---
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 const commands = [
@@ -42,7 +55,6 @@ client.once('ready', async () => {
     }
 });
 
-// --- LÓGICA DOS COMANDOS ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -50,7 +62,6 @@ client.on('interactionCreate', async interaction => {
 
     if (commandName === 'vote') {
         await interaction.deferReply();
-        
         try {
             let db = JSON.parse(fs.readFileSync(DATA_FILE));
             let valorParaEnviar = db.vote;
@@ -62,12 +73,11 @@ client.on('interactionCreate', async interaction => {
                 }
             });
 
-            // Incrementa o contador local
             db.vote = valorParaEnviar + 1;
             fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 
             const voteEmbed = new EmbedBuilder()
-                .setColor(0xFF4500) // Laranja avermelhado
+                .setColor(0xFF4500)
                 .setTitle('🚀 Petition Vote Registered!')
                 .setDescription(`You just sent vote number **${valorParaEnviar}**`)
                 .addFields({ 
@@ -79,17 +89,14 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.editReply({ embeds: [voteEmbed] });
         } catch (error) {
-            console.error(error);
             await interaction.editReply('❌ Failed to connect to the petition server.');
         }
     }
 
     if (commandName === 'count') {
         await interaction.deferReply();
-        
         try {
             const db = JSON.parse(fs.readFileSync(DATA_FILE));
-            // Enviamos um valor qualquer apenas para receber o count atualizado da API
             const response = await axios.post(API_URL, "check", { 
                 headers: { 'Content-Type': 'text/plain' } 
             });
@@ -101,7 +108,6 @@ client.on('interactionCreate', async interaction => {
                     { name: 'Global Total Votes', value: `**${response.data.count.toLocaleString('en-US')}**`, inline: true },
                     { name: 'Votes by this Bot', value: `**${db.vote}**`, inline: true }
                 )
-                .setFooter({ text: 'Mbappe Out Petition' })
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [countEmbed] });
