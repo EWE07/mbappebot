@@ -6,7 +6,7 @@ const express = require('express'); // Importa o Express
 
 // --- CONFIGURAÇÃO DO EXPRESS ---
 const app = express();
-const PORT = 8080;
+const PORT = 10000;
 
 // Rota raiz com nada escrito (vazia)
 app.get('/', (req, res) => {
